@@ -81,9 +81,10 @@ def main():
     parser = argparse.ArgumentParser(description='Generate PDF files from LaTeX templates')
     parser.add_argument('template', help='the LaTeX template to use')
     parser.add_argument('substitutions', nargs='+',
-        help='the list of substitutions, which can be given either in a CSV file or on the\
-              command line as KEY=VALUE pairs. Use Destination= to specify the destination\
-              of the output file relative to the current directory')
+        help='the list of substitutions, which can be given either in a CSV\
+              file or on the command line as key=value pairs. Use\
+              Destination=path/to/file to specify the destination of the output\
+              file relative to the current directory')
     args = parser.parse_args()
 
     # Ensure we got a valid template file (should have .tex extension), and it

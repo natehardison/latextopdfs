@@ -21,6 +21,10 @@ template. Each row in the CSV file will produce one PDF.
 correspond to the "name" part of the `\VAR{name}` substitution indicators
 in the LaTeX template.
 
+4. You can also specify the fields directly on the command line using
+`key=value` syntax. This only works for generating one file from your
+template though!
+
 ## Help
 
 	$ latextopdfs.py -h

@@ -81,8 +81,11 @@ def main():
         help='the output directory for the PDFs (defaults to current)')
     args = parser.parse_args()
 
-    # Ensure we got a valid template file (should have .tex extension)
-    if os.path.splitext(args.template)[1] != '.tex':
+    # Ensure we got a valid template file (should have .tex extension), and
+    # it should actually be a file.
+    if (os.path.splitext(args.template)[1] != '.tex' or not
+        os.path.exists(args.template) or not
+        os.path.isfile(args.template)):
         print "Invalid template file \"%s.\" Template must be a valid LaTeX file with .tex extension." % args.template
         sys.exit(1)
 

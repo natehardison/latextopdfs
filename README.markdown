@@ -36,13 +36,15 @@ substitutions for a single PDF.
 
 6. Run the code as follows:
 
-	`./latextopdfs.py <template-file> <substitutions-file>`
+	$ ./latextopdfs.py <template-file> <substitutions-file>`
 
-6. You can also specify the fields directly on the command line using
+
+7. You can also specify the fields directly on the command line using
 `key=value` syntax. This only works for generating one file from your template
 though!
 
-	`./latextopdfs.py <template-file> <key1=val1> <key2=val2> ...`
+	$ ./latextopdfs.py <template-file> <key1=val1> <key2=val2> ...`
+	
 
 ## Help
 

@@ -91,7 +91,8 @@ def main():
 
     # User might have passed in a relative path for template
     # and we need its parent dir anyway for the jinja2 engine
-    template = load_template(os.path.abspath(args.template))
+    template_path = os.path.abspath(args.template)
+    template = load_template(template_path)
 
     substitutions, use_file = parse_substitutions(args.substitutions)
     
@@ -113,16 +114,17 @@ def main():
             # Each row of substitutions in the CSV builds one PDF
             for subs_row in subs_file_reader:
                 destination = os.path.join(dest_folder, subs_row['Destination'])
-                subs_row['OriginalDir'] = original_dir
+                subs_row['TemplateDir'] = os.path.dirname(template_path)
                 make_one_pdf(template, subs_row, destination)
 
     else:
         if 'Destination' in substitutions:
             dest_file = substitutions['Destination']
         else:
-            dest_file = os.path.splitext(args.template)[0]
+            template_name = os.path.basename(args.template)
+            dest_file = os.path.splitext(template_name)[0]
         destination = os.path.join(dest_folder, dest_file)
-        substitutions['OriginalDir'] = original_dir
+        substitutions['TemplateDir'] = os.path.dirname(template_path)
         make_one_pdf(template, substitutions, destination)
 
     os.chdir(original_dir)

@@ -25,8 +25,9 @@ Each row in the CSV file will produce one PDF.
 3. For every variable named `foo`, there should be a corresponding substitution
 in the CSV file. The first row of the CSV file should contain the names of all
 of the variables in the template file (e.g. if the template has variables
-`FullName` and `Address`, the CSV file's first row should have columns titled
-FullName and Address). These names need not be in any particular order.
+`\VAR{FullName}` and `\VAR{Address}`, the CSV file's first row should have
+columns titled FullName and Address). These names need not be in any particular
+order.
 
 4. Make sure to include a column called Destination that specifies the output
 filename for each PDF!

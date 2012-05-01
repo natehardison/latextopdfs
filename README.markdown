@@ -14,10 +14,10 @@ merge since Word doesn't let you save the output to different files.
 1. Build a LaTeX template using modified Jinja syntax (so that it
 plays nicely with LaTeX syntax). The syntax changes are as follows:
 
-	* `\VAR{foo}` specifies a variable called `foo`.
-	* `\BLOCK{}` defines a block of Jinja template code.
-	* `\#{}` defines a comment; `%#` turns the whole line into a comment
-	* Refer to the Jinja docs at http://jinja.pocoo.org/docs/ for more info.
+* `\VAR{foo}` specifies a variable called `foo`.
+* `\BLOCK{}` defines a block of Jinja template code.
+* `\#{}` defines a comment; `%#` turns the whole line into a comment
+* Refer to the Jinja docs at http://jinja.pocoo.org/docs/ for more info.
 
 2. Create a CSV file containing the variable to make in the LaTeX template.
 Each row in the CSV file will produce one PDF.
@@ -36,13 +36,13 @@ substitutions for a single PDF.
 
 6. Run the code as follows:
 
-	$ ./latextopdfs.py <template-file> <substitutions-file>
+	./latextopdfs.py <template-file> <substitutions-file>
 
 6. You can also specify the fields directly on the command line using
 `key=value` syntax. This only works for generating one file from your template
 though!
 
-	$ ./latextopdfs.py <template-file> <key1=val1> <key2=val2> ...
+	./latextopdfs.py <template-file> <key1=val1> <key2=val2> ...
 
 ## Help
 

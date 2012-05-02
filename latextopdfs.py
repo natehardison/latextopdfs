@@ -9,10 +9,14 @@ from tempfile import mkdtemp, mkstemp
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, UndefinedError
 
 # Makes one PDF file by passing "substitutions" through "template"
-# and through pdflatex. Stores the PDF file in "destination".
-def make_one_pdf(template, substitutions, destination):
+# and through pdflatex.
+def make_one_pdf(template, substitutions, original_dir):
     # We're going to throw away this file after we make the PDF
     texfile, texfilename = mkstemp(dir=os.curdir)
+
+    # Add in the template file directory as a variable so that the template
+    # can locate any resources referenced from it (e.g. image files)
+    substitutions['TemplateDirectory'] = os.path.dirname(template.filename)
 
     # Pass the TeX template through jinja2 templating engine and into the temp file
     # Raises an error if there's an undefined variable in the template
@@ -24,15 +28,27 @@ def make_one_pdf(template, substitutions, destination):
         
     os.close(texfile)
     
-    # Compile the TeX file with PDFLaTeX
     call(['pdflatex', texfilename])
 
-    os.rename(texfilename + '.pdf', os.path.splitext(destination)[0] + '.pdf')
+    # There's got to be a better way to do this...
+    if 'Destination' in substitutions:
+        destination = os.path.expanduser(substitutions['Destination'])
+    else:
+        destination = template.name
+
+    if not os.path.isabs(destination):
+        destination = os.path.normpath(os.path.join(original_dir, destination))
+
+    destination = os.path.splitext(destination)[0]
+
+    os.rename(texfilename + '.pdf', destination + '.pdf')
 
     # These are just trash now
     os.remove(texfilename)
     os.remove(texfilename + '.aux')
     os.remove(texfilename + '.log')
+
+    return destination
 
 
 def load_template(template_path):
@@ -74,8 +90,12 @@ def parse_substitution_args(sub_args):
         return (dict([arg.split('=') for arg in sub_args]), False)
     except:
         print "Invalid substitutions \"%s\" Please use valid key=value format." % ' '.join(sub_args)
-        sys.exit(0)
+        sys.exit(1)
 
+def validate_template_file(template):
+    return (os.path.splitext(template)[1] == '.tex' and
+            os.path.exists(template) and
+            os.path.isfile(template))
 
 def main():
     parser = argparse.ArgumentParser(description='Generate PDF files from LaTeX templates')
@@ -89,10 +109,8 @@ def main():
 
     # Ensure we got a valid template file (should have .tex extension), and it
     # should actually be a file.
-    if (os.path.splitext(args.template)[1] != '.tex' or not
-        os.path.exists(args.template) or not
-        os.path.isfile(args.template)):
-        print "Invalid template file \"%s.\" Template must be a valid LaTeX file with .tex extension." % args.template
+    if not validate_template_file(args.template):
+        print "Invalid template file \"%s.\" Template must be a valid LaTeX file with the .tex extension." % args.template
         sys.exit(1)
 
     # User might have passed in a relative path for template and we need its
@@ -112,32 +130,16 @@ def main():
 
     if use_file:
         with open(substitutions, 'rU') as subs_file:
-            # DictReader pulls out each row of CSV as a dict and
-            # uses first row as keys
             subs_file_reader = csv.DictReader(subs_file)
-
-            # Each row of substitutions in the CSV builds one PDF
             for subs_row in subs_file_reader:
-                destination = os.path.expanduser(subs_row['Destination'])
-                if not os.path.isabs(destination):
-                    destination = os.path.normpath(os.path.join(original_dir, destination))
-                subs_row['TemplateDirectory'] = os.path.dirname(template.filename)
-                make_one_pdf(template, subs_row, destination)
-
+                destination = make_one_pdf(template, subs_row, original_dir)
     else:
-        if 'Destination' in substitutions:
-            destination = os.path.expanduser(substitutions['Destination'])
-        else:
-            destination = template.filename
-        if not os.path.isabs(destination):
-            destination = os.path.normpath(os.path.join(original_dir, destination))    
-        substitutions['TemplateDirectory'] = os.path.dirname(template.filename)
-        make_one_pdf(template, substitutions, destination)
+        destination = make_one_pdf(template, substitutions, original_dir)
 
     os.chdir(original_dir)
     os.rmdir(tmp_folder)
 
-    print "Success! Files stored in %s." % os.path.dirname(destination)
+    print "File(s) stored in %s." % os.path.dirname(destination)    
 
 
 if __name__ == '__main__':

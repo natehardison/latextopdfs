@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+# latextopdfs.py
+# --------------
+# Author: Nate Hardison (natehardison at gmail)
+
 import argparse
 import csv
 import jinja2
@@ -7,7 +11,7 @@ import os
 import re
 import subprocess
 import sys
-from tempfile import mkdtemp, mkstemp
+import tempfile
 
 class PDFGenerator:
     """Generates PDF files from a jinja2 template"""
@@ -15,8 +19,8 @@ class PDFGenerator:
         # Split path into dir/name for jinja2
         template_dir, template_name = os.path.split(os.path.abspath(template_path))
 
-        # Set up the jinja2 environment so that it doesn't get confused with other LaTeX markup
-        # Credit: http://e6h.de/post/11/
+        # Set up the jinja2 environment so that it doesn't get confused with
+        # other LaTeX markup. Credit: http://e6h.de/post/11/
         env = jinja2.Environment(
             block_start_string = '\BLOCK{',
             block_end_string = '}',
@@ -47,15 +51,17 @@ class PDFGenerator:
     def generate_pdf(self, substitutions, destination):
         """Makes one PDF file by passing "substitutions" through "template" and
            through pdflatex. Saves the resulting PDF as "destination"."""
-        # Pass the LaTeX template through jinja2 templating engine and into the temp file
-        # Raises an error if there's an undefined variable in the template
+        # Pass the LaTeX template through jinja2 templating engine and into the
+        # temp file. Raises an error if there's an undefined variable in the
+        # template
         try:
             tex_source = self._template.render(substitutions).encode('utf8')
         except jinja2.UndefinedError as e:
             raise PDFGenerator.Error("%s: error: %s" % (self._template.filename, e.message))
 
-        # We're going to throw away this file after we make the PDF
-        texfile, texfilename = mkstemp(dir=os.curdir)
+        # We're going to throw away this file after we make the PDF. We just
+        # need a file to write our rendered LaTeX source into for pdflatex.
+        texfile, texfilename = tempfile.mkstemp(dir=os.curdir)
         os.write(texfile, tex_source)
         os.close(texfile)
 
@@ -64,11 +70,14 @@ class PDFGenerator:
             try:
                 subprocess.check_call(["pdflatex", "-halt-on-error", texfilename], stdout=devnull)
             except subprocess.CalledProcessError as e:
-                os.rename(texfilename + ".log", destination + ".log")
+                # Save the error report to a file instead of spewing on stdout
+                os.rename(texfilename + ".log", destination + ".error_log")
                 error_message = "Command 'pdflatex' returned non-zero exit code %d." % e.returncode
-                error_message += " Error log saved as %s" % (destination + ".log")
+                error_message += " Error log saved as %s" % (destination + ".error_log")
                 raise PDFGenerator.Error(error_message)
             else:
+                # If successful, change name of output PDF to the user-specified
+                # destination.
                 os.rename(texfilename + ".pdf", destination + ".pdf")
             finally:
                 os.remove(texfilename)
@@ -82,8 +91,9 @@ class PDFGenerator:
             self.message = message
         def __str__(self):
             return repr(self.message)
-    # end class Error
-# end class PDFGenerator
+    #-- end class Error --#
+
+#-- end class PDFGenerator --#
 
 def csv_substitutions_reader(substitutions_file):
     csv_reader = csv.DictReader(substitutions_file)
@@ -91,9 +101,14 @@ def csv_substitutions_reader(substitutions_file):
         yield row
 
 def key_value_substitutions_reader(substitutions_file):
-    r = re.compile('("[^"]+"|[^ =]+)\s*=\s*("[^"]*"|[^ ]*)')
+    # This ugly-looking beast allows for including whitespace in keys and values
+    # if it's enclosed by double quotes. Space between key and the '=' and
+    # between '=' and value is also allowed.
+    r = re.compile('("[^"]+"|[^ =]+)\s?=\s?("[^"]*"|[^ ]*)')
     for line_number, line in enumerate(substitutions_file):
         try:
+            # TODO: this currently kills keys and values that begin/end with
+            # double quotes
             substitutions = dict([(k.strip('"'), v.strip('"')) for k, v in r.findall(line)])
         except ValueError:
             print >> sys.stderr, "%s:%d: error: Invalid key=value format %s" % (substitutions_file.name, line_number, line)
@@ -122,13 +137,17 @@ def main():
     # Make a temp folder to do our dirty work; remember current dir so we can
     # get back here later
     original_dir = os.getcwd()
-    tmp_folder = mkdtemp()
+    tmp_folder = tempfile.mkdtemp()
     os.chdir(tmp_folder)
 
     if args.substitutions == sys.stdin:
         print "Enter substitutions as key=value pairs. Each line should specify\
  all of the substitutions necessary to create one PDF file."
 
+    # Based on the extension of the substitutions filename we create the
+    # appropriate "reader," which is just a generator function (defined above)
+    # that gives us one row of substitutions at a time (enough to create one
+    # PDF).
     if os.path.splitext(args.substitutions.name)[1] == ".csv":
         substitutions_reader = csv_substitutions_reader(args.substitutions)
     else:
@@ -138,6 +157,7 @@ def main():
         if "OutputFile" in substitutions:
             destination = os.path.splitext(os.path.expanduser(substitutions["OutputFile"]))[0]
         else:
+            # Create the most sensible default filename that we can
             destination = default_destination + "_%d" % line_number
         destination = os.path.normpath(os.path.join(original_dir, destination))
         try:

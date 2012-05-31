@@ -1,5 +1,2 @@
-Clean up destination parsing code
+Allow keys/values to begin/end with double quotes
 Handle extensions better (don't hard code, use os.path.splitext less)
-Add in default destination if not specified in CSV
-Better file handling in case of exception(s)
-Read dict from sys.stdin instead of command line?
